@@ -84,7 +84,30 @@
   <script src="https://code.jquery.com/jquery-3.6.0.min.js"
     integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4=" crossorigin="anonymous"></script>
   <script src='https://api.mapbox.com/mapbox-gl-js/v2.3.0/mapbox-gl.js'></script>
+  <script src="https://unpkg.com/topojson@3"></script>
   <script>
+
+    let countiesGeoJson
+
+    fetch("../d3/data/pacific_county.json")
+    .then(response => {
+            if (response.ok) {
+                return response.json()
+            } else {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+        })
+    .then(data => {
+      countiesGeoJson = topojson.feature(data, {
+        type: 'GeometryCollection',
+        geometries: data.objects.pacific_county.geometries
+      });
+    })
+
+      
+
+
+
     var map = L.map('map', {
       center: [36, -94],
       zoom: 4,
@@ -98,32 +121,69 @@
       center: [-123.7179352, 46.5664905], // starting position [lng, lat]
       zoom: 9 // starting zoom
     });
-   
 
-    var commonStyles = {
-      weight: 1,
-      stroke: 1,
-      fillOpacity: .8
-    }
 
-    var countyLayer = $.getJSON('data/pacific_county.json', function (data) {
-      console.log(data);
-      var dataLayer = L.geoJson(data, {
-        style: function (feature) {
-          return {
-            color: '#dddddd',
-            weight: 1,
-            fillOpacity: 1,
-            fillColor: '#1f78b4'
-          }
+    // var commonStyles = {
+    //   weight: 1,
+    //   stroke: 1,
+    //   fillOpacity: .8
+    // }
+
+    // var countyLayer = $.getJSON('data/pacific_county.json', function (data) {
+    //   console.log(data);
+    //   var dataLayer = L.geoJson(data, {
+    //     style: function (feature) {
+    //       return {
+    //         color: '#dddddd',
+    //         weight: 1,
+    //         fillOpacity: 1,
+    //         fillColor: '#1f78b4'
+    //       }
+    //     }
+
+    //   }).addTo(map);
+
+
+    // });
+
+    map.on('load', function () {
+      map.addSource('parcels', {
+        'type': 'geojson',
+        'data': countiesGeoJson
+      });
+
+      // The feature-state dependent fill-opacity expression will render the hover effect
+      // when a feature's hover state is set to true.
+      map.addLayer({
+        'id': 'state-fills',
+        'type': 'fill',
+        'source': 'parcels',
+        'layout': {},
+        'paint': {
+          'fill-color': '#627BC1',
+          'fill-opacity': [
+            'case',
+            ['boolean', ['feature-state', 'hover'], false],
+            1,
+            0.5
+          ]
         }
+      });
 
-      }).addTo(map);
-     
+      map.addLayer({
+        'id': 'state-borders',
+        'type': 'line',
+        'source': 'parcels',
+        'layout': {},
+        'paint': {
+          'line-color': '#627BC1',
+          'line-width': 2
+        }
+      });
 
-    });
+    })
 
-   
+
   </script>
 
 </body>
