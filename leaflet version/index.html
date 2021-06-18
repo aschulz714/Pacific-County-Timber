@@ -86,25 +86,24 @@
   <script src='https://api.mapbox.com/mapbox-gl-js/v2.3.0/mapbox-gl.js'></script>
   <script src="https://unpkg.com/topojson@3"></script>
   <script>
-
     let countiesGeoJson
 
     fetch("../d3/data/pacific_county.json")
-    .then(response => {
-            if (response.ok) {
-                return response.json()
-            } else {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-        })
-    .then(data => {
-      countiesGeoJson = topojson.feature(data, {
-        type: 'GeometryCollection',
-        geometries: data.objects.pacific_county.geometries
-      });
-    })
+      .then(response => {
+        if (response.ok) {
+          return response.json()
+        } else {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+      })
+      .then(data => {
+        countiesGeoJson = topojson.feature(data, {
+          type: 'GeometryCollection',
+          geometries: data.objects.pacific_county.geometries
+        });
+      })
 
-      
+
 
 
 
@@ -165,10 +164,11 @@
             'case',
             ['boolean', ['feature-state', 'hover'], false],
             1,
-            0.5
+            0.4
           ]
         }
       });
+
 
       map.addLayer({
         'id': 'state-borders',
@@ -181,9 +181,87 @@
         }
       });
 
-    })
+      // Create a popup, but don't add it to the map yet.
+      // var popup = new mapboxgl.Popup({
+      // closeButton: false,
+      // closeOnClick: false
+      // });
+
+      // map.on('mouseenter', 'state-fills', function (e) {
+      // // Change the cursor style as a UI indicator.
+      // map.getCanvas().style.cursor = 'pointer';
+
+      // var coordinates = e.features[0].geometry.coordinates.slice();
+      // var description = `${e.features[0].properties.CURRENT_O} </BR>
+      //  Acres: ${e.features[0].properties.ACRES.toFixed()} </BR>
+      //  Assessed Value: $ ${e.features[0].properties.ASSESSED.toLocaleString()}`;
+
+      // // Ensure that if the map is zoomed out such that multiple
+      // // copies of the feature are visible, the popup appears
+      // // over the copy being pointed to.
+      // while (Math.abs(e.lngLat.lng - coordinates[0]) > 180) {
+      // coordinates[0] += e.lngLat.lng > coordinates[0] ? 360 : -360;
+      // }
+
+      // // Populate the popup and set its coordinates
+      // // based on the feature found.
+      // popup.setLngLat(coordinates).setHTML(description).addTo(map);
+      // });
+
+      // map.on('mouseleave', 'state-fills', function () {
+      // map.getCanvas().style.cursor = '';
+      // popup.remove();
+      // });
+
+      var popup = new mapboxgl.Popup({
+        closeButton: false,
+        closeOnClick: false
+      });
+
+      map.on('mouseenter', 'state-fills', function (e) {
+        map.getCanvas().style.cursor = 'pointer';
+
+        var coordinates = e.features[0].geometry.coordinates.slice();
+
+        // while (Math.abs(e.lngLat.lng - coordinates[0]) > 180) {
+        // coordinates[0] += e.lngLat.lng > coordinates[0] ? 360 : -360;
+
+        // }
+
+        popup.setLngLat(e.lngLat).setHTML(`${e.features[0].properties.CURRENT_O} </BR>
+            Acres: ${e.features[0].properties.ACRES.toFixed()} </BR>
+            Assessed Value: $ ${e.features[0].properties.ASSESSED.toLocaleString()}`).addTo(map);
+     
+     
+      // map.on('mouseenter', 'state-fills', function (e) {
+      //   new mapboxgl.Popup()
+      //     .setLngLat(e.lngLat)
+      //     .setHTML(`${e.features[0].properties.CURRENT_O} </BR>
+      //       Acres: ${e.features[0].properties.ACRES.toFixed()} </BR>
+      //       Assessed Value: $ ${e.features[0].properties.ASSESSED.toLocaleString()}`)
+      //     .addTo(map);
 
 
+      // });
+
+      map.on('mouseleave', 'state-fills', function () {
+        map.getCanvas().style.cursor = '';
+        popup.remove();
+      });
+
+
+      //     map.on('mouseenter', 'state-fills', function () {
+      // map.getCanvas().style.cursor = 'pointer';
+      // });
+
+      // // Change it back to a pointer when it leaves.
+      // map.on('mouseleave', 'state-fills', function () {
+      // map.getCanvas().style.cursor = '';
+      // });
+
+    });
+
+  })
   </script>
 
 </body>
