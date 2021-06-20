@@ -77,10 +77,11 @@
 
   <footer>
     <p>Map authored by Alex Schulz</p>
-    <p>Pacific County, Washington is located along the coast and is one of Washington's most productive timber counties.</p>
+    <p>Pacific County, Washington is located along the coast and is one of Washington's most productive timber counties.
+    </p>
     <p>This map uses the parcel data GIS download available from the Pacific County website. The data was filtered for
       parcels designated with a use of forest land.</p>
-    <p>As you can see, the majority of the parcels in Pacific County are forest land. Hover over the parcels to see the
+    <p>As you can see, the majority of the parcels in Pacific County are forest land. Click the parcels to see the
       owner of the parcel, size (in acres), and assessed value from the county.</p>
     <p>One particular noteworthy pattern is the large ownership by publicly-traded companies: Weyerhaeuser and Rayonier.
     </p>
@@ -157,6 +158,7 @@
         'data': countiesGeoJson
       });
 
+      // var hoveredStateId = null;
       // The feature-state dependent fill-opacity expression will render the hover effect
       // when a feature's hover state is set to true.
       map.addLayer({
@@ -170,7 +172,7 @@
             'case',
             ['boolean', ['feature-state', 'hover'], false],
             1,
-            0.4
+            .3
           ]
         }
       });
@@ -187,36 +189,39 @@
         }
       });
 
-      // Create a popup, but don't add it to the map yet.
-      // var popup = new mapboxgl.Popup({
-      // closeButton: false,
-      // closeOnClick: false
+
+      // map.on('mousemove', 'state-fills', function (e) {
+      //   if (e.features.length > 0) {
+      //     if (hoveredStateId !== null) {
+      //       map.setFeatureState({
+      //         source: 'parcels',
+      //         id: hoveredStateId
+      //       }, {
+      //         hover: false
+      //       });
+      //     }
+      //     hoveredStateId = e.features[0].id;
+      //     map.setFeatureState({
+      //       source: 'parcels',
+      //       id: hoveredStateId
+      //     }, {
+      //       hover: true
+      //     });
+      //   }
       // });
 
-      // map.on('mouseenter', 'state-fills', function (e) {
-      // // Change the cursor style as a UI indicator.
-      // map.getCanvas().style.cursor = 'pointer';
-
-      // var coordinates = e.features[0].geometry.coordinates.slice();
-      // var description = `${e.features[0].properties.CURRENT_O} </BR>
-      //  Acres: ${e.features[0].properties.ACRES.toFixed()} </BR>
-      //  Assessed Value: $ ${e.features[0].properties.ASSESSED.toLocaleString()}`;
-
-      // // Ensure that if the map is zoomed out such that multiple
-      // // copies of the feature are visible, the popup appears
-      // // over the copy being pointed to.
-      // while (Math.abs(e.lngLat.lng - coordinates[0]) > 180) {
-      // coordinates[0] += e.lngLat.lng > coordinates[0] ? 360 : -360;
-      // }
-
-      // // Populate the popup and set its coordinates
-      // // based on the feature found.
-      // popup.setLngLat(coordinates).setHTML(description).addTo(map);
-      // });
-
+      // // When the mouse leaves the state-fill layer, update the feature state of the
+      // // previously hovered feature.
       // map.on('mouseleave', 'state-fills', function () {
-      // map.getCanvas().style.cursor = '';
-      // popup.remove();
+      //   if (hoveredStateId !== null) {
+      //     map.setFeatureState({
+      //       source: 'parcels',
+      //       id: hoveredStateId
+      //     }, {
+      //       hover: false
+      //     });
+      //   }
+      //   hoveredStateId = null;
       // });
 
       var popup = new mapboxgl.Popup({
@@ -224,50 +229,50 @@
         closeOnClick: false
       });
 
-      map.on('mouseenter', 'state-fills', function (e) {
-        map.getCanvas().style.cursor = 'pointer';
+      // map.on('mouseenter', 'state-fills', function (e) {
+      //   map.getCanvas().style.cursor = 'pointer';
 
-        var coordinates = e.features[0].geometry.coordinates.slice();
+      //   var coordinates = e.features[0].geometry.coordinates.slice();
 
-        // while (Math.abs(e.lngLat.lng - coordinates[0]) > 180) {
-        // coordinates[0] += e.lngLat.lng > coordinates[0] ? 360 : -360;
+      //   // while (Math.abs(e.lngLat.lng - coordinates[0]) > 180) {
+      //   // coordinates[0] += e.lngLat.lng > coordinates[0] ? 360 : -360;
 
-        // }
+      //   // }
 
-        popup.setLngLat(e.lngLat).setHTML(`${e.features[0].properties.CURRENT_O} </BR>
-            Acres: ${e.features[0].properties.ACRES.toFixed()} </BR>
-            Assessed Value: $ ${e.features[0].properties.ASSESSED.toLocaleString()}`).addTo(map);
-
-
-        // map.on('mouseenter', 'state-fills', function (e) {
-        //   new mapboxgl.Popup()
-        //     .setLngLat(e.lngLat)
-        //     .setHTML(`${e.features[0].properties.CURRENT_O} </BR>
-        //       Acres: ${e.features[0].properties.ACRES.toFixed()} </BR>
-        //       Assessed Value: $ ${e.features[0].properties.ASSESSED.toLocaleString()}`)
-        //     .addTo(map);
+      //   popup.setLngLat(e.lngLat).setHTML(`${e.features[0].properties.CURRENT_O} </BR>
+      //       Acres: ${e.features[0].properties.ACRES.toFixed()} </BR>
+      //       Assessed Value: $ ${e.features[0].properties.ASSESSED.toLocaleString()}`).addTo(map);
 
 
-        // });
+      map.on('click', 'state-fills', function (e) {
+        new mapboxgl.Popup()
+          .setLngLat(e.lngLat)
+          .setHTML(`${e.features[0].properties.CURRENT_O} </BR>
+              Acres: ${e.features[0].properties.ACRES.toFixed()} </BR>
+              Assessed Value: $ ${e.features[0].properties.ASSESSED.toLocaleString()}`)
+          .addTo(map);
 
-        map.on('mouseleave', 'state-fills', function () {
-          map.getCanvas().style.cursor = '';
-          popup.remove();
-        });
-
-
-        //     map.on('mouseenter', 'state-fills', function () {
-        // map.getCanvas().style.cursor = 'pointer';
-        // });
-
-        // // Change it back to a pointer when it leaves.
-        // map.on('mouseleave', 'state-fills', function () {
-        // map.getCanvas().style.cursor = '';
-        // });
 
       });
 
-    })
+      map.on('mouseleave', 'state-fills', function () {
+        map.getCanvas().style.cursor = '';
+        popup.remove();
+      });
+
+
+      map.on('mouseenter', 'state-fills', function () {
+        map.getCanvas().style.cursor = 'pointer';
+      });
+
+      // Change it back to a pointer when it leaves.
+      map.on('mouseleave', 'state-fills', function () {
+        map.getCanvas().style.cursor = '';
+      });
+
+    });
+
+   //  })
   </script>
 
 </body>
