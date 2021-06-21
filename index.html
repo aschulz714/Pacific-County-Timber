@@ -87,7 +87,7 @@
     </p>
   </footer>
   <!-- Is the is the latest version of Leaflet? -->
-  <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+  <!-- <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script> -->
   <script src="https://code.jquery.com/jquery-3.6.0.min.js"
     integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4=" crossorigin="anonymous"></script>
   <script src='https://api.mapbox.com/mapbox-gl-js/v2.3.0/mapbox-gl.js'></script>
@@ -95,7 +95,7 @@
   <script>
     let countiesGeoJson
 
-    fetch("../d3/data/pacific_county.json")
+    fetch("data/pacific_county.json")
       .then(response => {
         if (response.ok) {
           return response.json()
@@ -114,10 +114,10 @@
 
 
 
-    var map = L.map('map', {
-      center: [36, -94],
-      zoom: 4,
-    });
+    // var map = L.map('map', {
+    //   center: [36, -94],
+    //   zoom: 4,
+    // });
 
     mapboxgl.accessToken =
       'pk.eyJ1IjoiYXNjaHVsejcxNCIsImEiOiJja2k4ZHNoZmQwNHRsMnlvNDZ0bjhqcGlwIn0.cPldI_1d7yJe5f9mm8rBwA';
