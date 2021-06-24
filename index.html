@@ -139,6 +139,22 @@
           type: 'GeometryCollection',
           geometries: data.objects.pacific_county.geometries
         });
+
+        for (x of countiesGeoJson.features) {
+          const p = x.properties
+          p.perAcre = p.ASSESSED / p.ACRES
+        }
+
+        const sumAcres = countiesGeoJson.features.reduce(function(a, b) {
+          return a + b.properties.ACRES
+        }, 0)
+
+        const sumPrice = countiesGeoJson.features.reduce(function(a, b) {
+          return a + b.properties.ASSESSED
+        }, 0)
+
+        console.log(sumAcres) // total acres
+        console.log(sumPrice / sumAcres) // avg cost per acre over region 
       })
 
 
@@ -203,7 +219,7 @@
         'layout': {},
         'paint': {
           'fill-color': {
-            property: 'ACRES', // this will be your density property form you geojson
+            property: 'perAcre', // this will be your density property form you geojson
             stops: [
               [100, '#F36548'],
               [500, '#D3482C'],
