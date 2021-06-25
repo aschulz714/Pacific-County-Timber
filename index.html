@@ -100,10 +100,11 @@
   <div id='map'></div>
 
   <div id="state-legend" class="legend">
-    <h4>Acres</h4>
-    <div><span style="background-color: #A72B12"></span>700</div>
-    <div><span style="background-color: #D3482C"></span>500</div>
-    <div><span style="background-color: #F36548"></span>100</div>
+    <h4>Price Per Acre</h4>
+    <div><span style="background-color: #A72B12"></span>$700</div>
+    <div><span style="background-color: #D3482C"></span>$500</div>
+    <div><span style="background-color: #F36548"></span>$100</div>
+    <div><span style="background-color: #F3EF03"></span>$50</div>
   </div>
 
   <footer>
@@ -221,6 +222,7 @@
           'fill-color': {
             property: 'perAcre', // this will be your density property form you geojson
             stops: [
+              [50, '#F3EF03'],
               [100, '#F36548'],
               [500, '#D3482C'],
               [700, '#A72B12']
@@ -306,6 +308,7 @@
         new mapboxgl.Popup()
           .setLngLat(e.lngLat)
           .setHTML(`${e.features[0].properties.CURRENT_O} </BR>
+              Parcel ID: ${e.features[0].properties.ASSESSOR} </BR>
               Acres: ${e.features[0].properties.ACRES.toFixed()} </BR>
               Assessed Value: $ ${e.features[0].properties.ASSESSED.toLocaleString()} </br>
               Price Per Acre: $ ${(e.features[0].properties.ASSESSED/e.features[0].properties.ACRES).toFixed()}`)
