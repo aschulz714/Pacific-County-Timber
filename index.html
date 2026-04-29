@@ -1,346 +1,1014 @@
 <!DOCTYPE html>
-<html>
-
+<html lang="en">
 <head>
-  <meta charset=utf-8 />
-  <title>Pacific County Timber</title>
-  <meta name='viewport' content='initial-scale=1,maximum-scale=1,user-scalable=no' />
-  <!-- Is the is the latest version of Leaflet? -->
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
-  <link href="https://fonts.googleapis.com/css?family=Lato:300,400,700" rel="stylesheet">
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Pacific County Timber — Designated Forest Land</title>
+  <meta name="description" content="An interactive map and concentration analysis of every parcel classified as Designated Forest Land in Pacific County, Washington. Built by Alex Schulz." />
 
-  <link href='https://api.mapbox.com/mapbox-gl-js/v2.3.0/mapbox-gl.css' rel='stylesheet' />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Lato:wght@300;400;700;900&display=swap" rel="stylesheet">
+
+  <link href="https://api.mapbox.com/mapbox-gl-js/v3.10.0/mapbox-gl.css" rel="stylesheet" />
 
   <style>
+    :root {
+      --bg-base: #1f2421;
+      --bg-panel: #262c29;
+      --bg-elevated: #2d3431;
+      --bg-control: #2a302d;
+      --text-bright: #e8ebe4;
+      --text-body: #c5c9c3;
+      --text-muted: #8e948e;
+      --text-faint: #6a706b;
+      --emerald: #139925;
+      --emerald-bright: #1cb930;
+      --emerald-deep: #0a6418;
+      --emerald-glow: rgba(19, 153, 37, 0.45);
+      --emerald-glow-soft: rgba(19, 153, 37, 0.18);
+      --hairline: rgba(255, 255, 255, 0.07);
+      --hairline-bright: rgba(255, 255, 255, 0.14);
+      --hairline-strong: rgba(255, 255, 255, 0.22);
+    }
+
+    * { box-sizing: border-box; }
+    html {
+      font-family: "Lato", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: var(--text-body); background: var(--bg-base);
+      -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale;
+    }
     body {
-      margin: 0;
-      padding: 0;
-      background: rgb(42, 42, 42);
-      font-family: "Lato", sans-serif;
-      font-size: 100%;
-      font-weight: 300;
-      color: rgb(172, 172, 172);
+      margin: 0; min-height: 100vh; font-weight: 300; font-size: 17px; line-height: 1.6;
+      background:
+        radial-gradient(circle at 80% -10%, rgba(19, 153, 37, 0.06), transparent 50%),
+        radial-gradient(circle at 0% 100%, rgba(19, 153, 37, 0.04), transparent 60%),
+        var(--bg-base);
     }
+    ::selection { background: var(--emerald); color: var(--bg-base); }
+    a { color: var(--emerald-bright); text-decoration: underline; text-underline-offset: 0.2em; text-decoration-thickness: 1px; text-decoration-color: rgba(28, 185, 48, 0.4); transition: text-decoration-color 180ms ease, color 180ms ease; }
+    a:hover { color: #28d640; text-decoration-color: var(--emerald-bright); }
+    :focus-visible { outline: 2px solid var(--emerald-bright); outline-offset: 3px; }
+    button { font-family: inherit; cursor: pointer; }
 
-    header,
-    footer,
-    section {
-      padding: 6px 10%;
-      margin: 0 auto;
-      width: 80%
+    .shell { width: 100%; max-width: 76rem; margin-inline: auto; padding-inline: 1.5rem; }
+    @media (min-width: 768px) { .shell { padding-inline: 2.5rem; } }
+
+    .topbar {
+      position: sticky; top: 0; z-index: 40;
+      border-bottom: 1px solid var(--hairline);
+      background: rgba(31, 36, 33, 0.88); backdrop-filter: blur(10px);
     }
+    .topbar-inner { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding-block: 0.85rem; font-size: 0.875rem; }
+    .topbar a.brand { color: var(--text-body); text-decoration: none; font-weight: 400; letter-spacing: 0.02em; }
+    .topbar a.brand:hover { color: var(--emerald-bright); }
+    .topbar .meta { color: var(--text-faint); font-size: 0.75rem; letter-spacing: 0.08em; text-transform: uppercase; }
 
-    h1 {
-      display: inline-block;
-      margin-right: 20px;
-      color: rgb(190, 190, 190);
-      font-size: 3.5em;
+    /* Hero */
+    .hero { padding-block: 4rem 2.5rem; }
+    @media (min-width: 768px) { .hero { padding-block: 6rem 3.5rem; } }
+    .eyebrow {
+      font-size: 0.75rem; letter-spacing: 0.18em; text-transform: uppercase;
+      color: var(--text-muted); font-weight: 400; margin: 0 0 1.5rem;
+    }
+    h1.title {
+      font-family: "Lato", sans-serif; font-weight: 900;
+      font-size: 2.75rem; line-height: 1.02; letter-spacing: -0.01em;
+      color: var(--text-bright); margin: 0 0 1.25rem; max-width: 28ch;
+    }
+    @media (min-width: 768px) { h1.title { font-size: 4rem; } }
+    @media (min-width: 1024px) { h1.title { font-size: 4.75rem; } }
+
+    h2.subtitle {
+      font-family: "Lato", sans-serif; font-weight: 300;
+      font-size: 1.25rem; line-height: 1.3; letter-spacing: 0.18em; text-transform: uppercase;
+      color: var(--emerald);
+      text-shadow: 0 0 24px var(--emerald-glow), 0 0 56px var(--emerald-glow-soft);
+      margin: 0 0 1.5rem;
+    }
+    @media (min-width: 768px) { h2.subtitle { font-size: 1.5rem; } }
+
+    .lede { font-size: 1.0625rem; line-height: 1.65; max-width: 38rem; color: var(--text-body); margin: 0; font-weight: 300; }
+    @media (min-width: 768px) { .lede { font-size: 1.125rem; } }
+    .lede em { color: var(--text-bright); font-style: italic; font-weight: 400; }
+
+    /* Hero stats */
+    .stats {
+      margin-top: 2.25rem;
+      display: grid; grid-template-columns: repeat(2, 1fr); gap: 0;
+      border-top: 1px solid var(--hairline); border-bottom: 1px solid var(--hairline);
+    }
+    @media (min-width: 640px) { .stats { grid-template-columns: repeat(4, 1fr); } }
+    .stat { padding: 0.7rem 1rem; border-bottom: 1px solid var(--hairline); border-right: 1px solid var(--hairline); }
+    .stat:nth-child(2n) { border-right: none; }
+    .stat:nth-last-child(-n+2):not(:nth-last-child(odd)) { border-bottom: none; }
+    .stat:last-child { border-bottom: none; }
+    @media (min-width: 640px) {
+      .stat { border-bottom: none; border-right: 1px solid var(--hairline); padding: 0.85rem 1.5rem; }
+      .stat:nth-child(2n) { border-right: 1px solid var(--hairline); }
+      .stat:first-child { padding-left: 0; }
+      .stat:last-child { border-right: none; padding-right: 0; }
+    }
+    .stat-key { font-size: 0.6875rem; letter-spacing: 0.18em; text-transform: uppercase; color: var(--text-faint); margin: 0 0 0.3rem; font-weight: 400; line-height: 1.3; }
+    .stat-value { font-size: 1.375rem; font-weight: 700; color: var(--text-bright); margin: 0; font-variant-numeric: tabular-nums; line-height: 1.15; }
+    .stat-value.owner { font-size: 1rem; font-weight: 400; }
+
+    /* Findings strip (post-map synthesis) */
+    .findings-section { padding-block: 1rem 3rem; border-top: 1px solid var(--hairline); }
+    .findings-eyebrow { font-size: 0.75rem; letter-spacing: 0.2em; text-transform: uppercase; color: var(--emerald); margin: 2rem 0 1rem; font-weight: 400; }
+    .insight-grid {
+      display: grid; grid-template-columns: 1fr; gap: 0;
+      border-top: 2px solid var(--emerald-deep);
+      border-bottom: 1px solid var(--hairline);
+    }
+    @media (min-width: 700px) { .insight-grid { grid-template-columns: repeat(3, 1fr); } }
+    .insight {
+      padding: 1.1rem 1.25rem;
+      border-bottom: 1px solid var(--hairline);
+      position: relative;
+    }
+    .insight:last-child { border-bottom: none; }
+    @media (min-width: 700px) {
+      .insight { border-bottom: none; border-right: 1px solid var(--hairline); padding: 1.35rem 1.5rem; }
+      .insight:last-child { border-right: none; }
+    }
+    .insight-key { font-size: 0.6875rem; letter-spacing: 0.18em; text-transform: uppercase; color: var(--text-muted); margin: 0 0 0.4rem; font-weight: 400; line-height: 1.3; }
+    .insight-value {
+      font-family: "Lato", sans-serif; font-weight: 900;
+      font-size: 2rem; line-height: 1; color: var(--emerald-bright);
+      margin: 0 0 0.35rem;
+      text-shadow: 0 0 18px rgba(19, 153, 37, 0.25);
+      font-variant-numeric: tabular-nums;
+    }
+    @media (min-width: 768px) { .insight-value { font-size: 2.5rem; } }
+    .insight-label { font-size: 0.8125rem; color: var(--text-body); margin: 0; line-height: 1.35; }
+
+    /* Map controls */
+    .controls-bar {
+      padding-block: 1.5rem 1rem;
+    }
+    .controls-row {
+      display: flex; flex-wrap: wrap; align-items: center; gap: 1.25rem 2rem;
+      padding: 1rem 1.25rem;
+      background: var(--bg-panel);
+      border: 1px solid var(--hairline);
+      border-radius: 0.25rem;
+    }
+    .control-group { display: flex; align-items: center; gap: 0.85rem; flex-wrap: wrap; }
+    .control-label {
+      font-size: 0.6875rem; letter-spacing: 0.16em; text-transform: uppercase;
+      color: var(--text-faint); font-weight: 400;
+    }
+    .toggle-group { display: inline-flex; border: 1px solid var(--hairline-bright); border-radius: 0.25rem; overflow: hidden; }
+    .toggle-btn {
+      background: transparent; color: var(--text-muted);
+      border: none; padding: 0.55rem 0.95rem;
+      font-size: 0.8125rem; font-weight: 400;
+      border-right: 1px solid var(--hairline-bright);
+      transition: background 180ms ease, color 180ms ease;
+    }
+    .toggle-btn:last-child { border-right: none; }
+    .toggle-btn:hover { color: var(--text-bright); background: var(--bg-elevated); }
+    .toggle-btn.is-active {
+      background: var(--emerald);
+      color: var(--bg-base);
       font-weight: 700;
     }
-
-    h2 {
-      display: inline-block;
-      color: #139925;
-      letter-spacing: 0.05em;
-      margin-top: 0px;
-      font-weight: 300;
-      text-transform: uppercase;
-      /*  Stack text shadows.  */
-      text-shadow: 0 0 30px #067018, 0 0 40px #067018, 0 0 50px #067018, 0 0 80px #067018;
+    .slider-group {
+      display: flex; align-items: center; gap: 0.85rem;
+      flex: 1; min-width: 16rem;
+    }
+    input[type="range"] {
+      flex: 1; -webkit-appearance: none; appearance: none;
+      height: 4px; background: var(--bg-elevated); border-radius: 2px;
+      outline: none;
+    }
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none; appearance: none;
+      width: 16px; height: 16px; border-radius: 50%;
+      background: var(--emerald-bright); cursor: pointer;
+      box-shadow: 0 0 0 3px rgba(28, 185, 48, 0.18);
+    }
+    input[type="range"]::-moz-range-thumb {
+      width: 16px; height: 16px; border-radius: 50%;
+      background: var(--emerald-bright); cursor: pointer; border: none;
+      box-shadow: 0 0 0 3px rgba(28, 185, 48, 0.18);
+    }
+    .slider-value {
+      font-variant-numeric: tabular-nums; font-size: 0.875rem; color: var(--text-bright);
+      min-width: 5rem; text-align: right;
     }
 
-
-    #map {
-      width: 80%;
-      height: 540px;
-      margin: 10px auto;
+    /* Map + Owner panel */
+    .map-section { padding-block: 0 3rem; }
+    .map-and-panel {
+      display: grid; grid-template-columns: 1fr; gap: 1rem;
     }
-
-
-    p {
-      font-size: 1em;
-      color: rgba(170, 170, 170);
-      ;
-      font-weight: 300;
-      font-size: 1.2em;
+    @media (min-width: 1024px) {
+      .map-and-panel { grid-template-columns: minmax(0, 1fr) 22rem; gap: 1.25rem; }
     }
+    .map-frame {
+      position: relative;
+      border: 1px solid var(--hairline-bright);
+      border-radius: 0.25rem;
+      overflow: hidden;
+      box-shadow: 0 24px 60px rgba(0, 0, 0, 0.35);
+      background: var(--bg-panel);
+    }
+    #map { width: 100%; height: 60vh; min-height: 480px; }
+    @media (min-width: 1024px) { #map { height: 68vh; } }
 
     .legend {
-      background-color: #fff;
-      border-radius: 3px;
-      bottom: 30px;
-      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
-      font: 20px/40px 'Helvetica Neue', Arial, Helvetica, sans-serif;
-      padding: 10px;
-      position: absolute;
-      right: 10px;
-      z-index: 1250;
+      position: absolute; bottom: 1rem; right: 1rem; z-index: 5;
+      background: rgba(38, 44, 41, 0.94); backdrop-filter: blur(8px);
+      border: 1px solid var(--hairline-bright);
+      border-radius: 0.25rem; padding: 0.85rem 1rem;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+      font-size: 0.8125rem; min-width: 12rem;
+      color: var(--text-body);
+    }
+    .legend-title { font-size: 0.6875rem; letter-spacing: 0.18em; text-transform: uppercase; color: var(--text-faint); margin: 0 0 0.6rem; font-weight: 400; }
+    .legend-row { display: flex; align-items: center; gap: 0.6rem; padding: 0.18rem 0; }
+    .legend-swatch { width: 14px; height: 14px; border-radius: 0.15rem; border: 1px solid rgba(0,0,0,0.3); flex: none; }
+
+    .map-coord-badge {
+      position: absolute; top: 1rem; left: 1rem; z-index: 5;
+      font-size: 0.6875rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-muted);
+      background: rgba(38, 44, 41, 0.94); backdrop-filter: blur(8px);
+      border: 1px solid var(--hairline-bright); border-radius: 0.2rem;
+      padding: 0.4rem 0.65rem;
     }
 
-    .legend h4 {
-      margin: 0 0 10px;
+    /* Owner panel */
+    .owner-panel {
+      background: var(--bg-panel);
+      border: 1px solid var(--hairline-bright);
+      border-radius: 0.25rem;
+      display: flex; flex-direction: column;
+      max-height: 68vh;
+    }
+    @media (max-width: 1023px) {
+      .owner-panel { max-height: 28rem; }
+    }
+    .owner-panel-header {
+      display: flex; align-items: center; justify-content: space-between; gap: 0.5rem;
+      padding: 0.85rem 1rem;
+      border-bottom: 1px solid var(--hairline);
+    }
+    .owner-panel-title {
+      font-size: 0.6875rem; letter-spacing: 0.16em; text-transform: uppercase;
+      color: var(--text-muted); font-weight: 400; margin: 0;
+    }
+    .owner-clear-btn {
+      background: transparent; color: var(--emerald-bright);
+      border: 1px solid transparent; border-radius: 0.2rem;
+      font-size: 0.75rem; padding: 0.3rem 0.55rem;
+      transition: background 180ms ease, border-color 180ms ease;
+    }
+    .owner-clear-btn:hover { background: var(--bg-elevated); border-color: var(--hairline-bright); }
+    .owner-clear-btn:disabled { color: var(--text-faint); cursor: default; }
+    .owner-clear-btn:disabled:hover { background: transparent; border-color: transparent; }
+    .owner-list { flex: 1; overflow-y: auto; padding: 0.4rem 0; }
+    .owner-row {
+      display: grid; grid-template-columns: 1.5rem 1fr auto; gap: 0.5rem; align-items: baseline;
+      width: 100%; text-align: left;
+      background: transparent; border: none;
+      padding: 0.55rem 1rem;
+      color: var(--text-body); font-size: 0.8125rem;
+      transition: background 150ms ease;
+      border-left: 2px solid transparent;
+    }
+    .owner-row:hover { background: var(--bg-elevated); }
+    .owner-row.is-active {
+      background: rgba(19, 153, 37, 0.12);
+      border-left-color: var(--emerald-bright);
+    }
+    .owner-rank { font-variant-numeric: tabular-nums; color: var(--text-faint); font-size: 0.75rem; }
+    .owner-name { color: var(--text-body); line-height: 1.3; word-break: break-word; }
+    .owner-row.is-active .owner-name { color: var(--text-bright); font-weight: 700; }
+    .owner-share { font-variant-numeric: tabular-nums; color: var(--text-muted); font-size: 0.75rem; white-space: nowrap; }
+    .owner-row.is-active .owner-share { color: var(--emerald-bright); }
+    .owner-acres-bar {
+      grid-column: 1 / -1; height: 3px; background: rgba(255,255,255,0.05);
+      border-radius: 2px; overflow: hidden; margin-top: 0.35rem;
+    }
+    .owner-acres-bar > span {
+      display: block; height: 100%; background: var(--emerald-deep);
+      transition: background 150ms ease;
+    }
+    .owner-row.is-active .owner-acres-bar > span { background: var(--emerald-bright); }
+
+    /* Chart section */
+    .chart-section { padding-block: 3rem; border-top: 1px solid var(--hairline); }
+    .chart-eyebrow { font-size: 0.75rem; letter-spacing: 0.2em; text-transform: uppercase; color: var(--emerald); margin: 0 0 0.75rem; font-weight: 400; }
+    .chart-heading {
+      font-family: "Lato", sans-serif; font-weight: 700; font-size: 1.75rem; line-height: 1.2; margin: 0 0 0.6rem;
+      color: var(--text-bright);
+    }
+    .chart-sub { color: var(--text-muted); font-size: 0.95rem; margin: 0 0 2rem; max-width: 42rem; }
+    .chart-frame { background: var(--bg-panel); border: 1px solid var(--hairline); border-radius: 0.25rem; padding: 1.5rem 1.25rem 1rem; }
+    @media (min-width: 768px) { .chart-frame { padding: 2rem 2rem 1.25rem; } }
+    .chart-svg { width: 100%; height: auto; display: block; font-family: "Lato", sans-serif; }
+    .chart-svg .bar-bg { fill: rgba(255,255,255,0.04); }
+    .chart-svg .bar-fill { fill: var(--emerald); transition: fill 180ms ease; }
+    .chart-svg g.bar:hover .bar-fill { fill: var(--emerald-bright); }
+    .chart-svg .label-name { fill: var(--text-body); font-size: 11px; }
+    .chart-svg g.bar:hover .label-name { fill: var(--text-bright); }
+    .chart-svg .label-acres { fill: var(--text-muted); font-size: 11px; font-variant-numeric: tabular-nums; }
+    .chart-svg .label-pct { fill: var(--text-faint); font-size: 10px; font-variant-numeric: tabular-nums; }
+
+    /* Notes */
+    .notes-section { padding-block: 3rem 4rem; border-top: 1px solid var(--hairline); }
+    .notes-grid { display: grid; gap: 2.5rem; }
+    @media (min-width: 768px) { .notes-grid { grid-template-columns: 1fr 1fr; gap: 4rem; } }
+    .notes-eyebrow { font-size: 0.75rem; letter-spacing: 0.2em; text-transform: uppercase; color: var(--emerald); margin: 0 0 0.75rem; font-weight: 400; }
+    .notes-block h3 {
+      font-family: "Lato", sans-serif; font-weight: 700; font-size: 1.5rem; line-height: 1.25; margin: 0 0 1rem;
+      color: var(--text-bright);
+    }
+    .notes-block p { color: var(--text-body); line-height: 1.7; font-size: 0.9375rem; margin: 0 0 1rem; }
+    .notes-block ol, .notes-block ul { color: var(--text-body); line-height: 1.7; font-size: 0.9375rem; padding-left: 1.5rem; margin: 0 0 1rem; }
+    .notes-block li { margin-bottom: 0.5rem; }
+    .notes-block li::marker { color: var(--emerald); }
+    .notes-block strong { color: var(--text-bright); font-weight: 700; }
+    .source-row {
+      display: grid; grid-template-columns: 8rem 1fr; gap: 1rem;
+      padding: 0.55rem 0; border-top: 1px solid var(--hairline); font-size: 0.875rem;
+    }
+    .source-row:first-of-type { border-top: 1px solid var(--hairline); }
+    .source-key { font-size: 0.6875rem; letter-spacing: 0.16em; text-transform: uppercase; color: var(--text-faint); }
+    .source-value { color: var(--text-body); font-variant-numeric: tabular-nums; }
+    .source-value code { font-family: ui-monospace, "SFMono-Regular", Consolas, monospace; font-size: 0.8125rem; color: var(--emerald-bright); background: rgba(19, 153, 37, 0.08); padding: 0.1rem 0.35rem; border-radius: 0.2rem; }
+
+    /* Footer */
+    footer { border-top: 1px solid var(--hairline); padding-block: 2rem 3rem; }
+    .footer-inner {
+      display: flex; flex-wrap: wrap; gap: 1.5rem; align-items: center; justify-content: space-between;
+      font-size: 0.8125rem; color: var(--text-muted);
+    }
+    .footer-inner .links { display: flex; gap: 1.25rem; flex-wrap: wrap; }
+
+    /* Mapbox overrides for dark theme */
+    .mapboxgl-ctrl-attrib { font-size: 10px !important; background: rgba(38, 44, 41, 0.7) !important; color: var(--text-faint) !important; }
+    .mapboxgl-ctrl-attrib a { color: var(--text-muted) !important; }
+    .mapboxgl-ctrl-group { background: var(--bg-panel) !important; border: 1px solid var(--hairline-bright) !important; }
+    .mapboxgl-ctrl-group button { color: var(--text-body) !important; }
+    .mapboxgl-ctrl-group button:hover { background-color: var(--bg-elevated) !important; }
+    .mapboxgl-ctrl-group button .mapboxgl-ctrl-icon { filter: invert(0.85) brightness(1.1); }
+    .mapboxgl-ctrl-scale {
+      background: rgba(38, 44, 41, 0.85) !important; color: var(--text-body) !important;
+      border: 1px solid var(--hairline-bright) !important; border-top: none !important; font-size: 11px !important;
+    }
+    .mapboxgl-popup-content {
+      font-family: "Lato", sans-serif !important;
+      background: var(--bg-elevated) !important;
+      border: 1px solid var(--hairline-bright);
+      border-radius: 0.25rem;
+      padding: 0.95rem 1.05rem !important;
+      box-shadow: 0 16px 36px rgba(0, 0, 0, 0.5) !important;
+      color: var(--text-body); max-width: 280px;
+    }
+    .mapboxgl-popup-tip { border-top-color: var(--bg-elevated) !important; border-bottom-color: var(--bg-elevated) !important; }
+    .mapboxgl-popup-close-button { color: var(--text-muted) !important; font-size: 18px !important; padding: 0 6px !important; }
+    .mapboxgl-popup-close-button:hover { color: var(--text-bright) !important; background: transparent !important; }
+    .popup-owner { font-weight: 700; font-size: 0.9375rem; color: var(--text-bright); margin-bottom: 0.6rem; }
+    .popup-row { display: flex; justify-content: space-between; gap: 1.5rem; font-size: 0.8125rem; padding: 0.18rem 0; }
+    .popup-row .k { font-size: 0.6875rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-faint); font-weight: 400; }
+    .popup-row .v { font-variant-numeric: tabular-nums; color: var(--text-body); font-weight: 400; }
+
+    /* Port markers (HTML markers via Mapbox) */
+    .port-marker {
+      display: flex; align-items: center; gap: 0.4rem;
+      pointer-events: none;
+      transform: translateX(-7px);
+    }
+    .port-dot {
+      width: 10px; height: 10px; border-radius: 50%;
+      background: var(--emerald-bright); border: 2px solid #0a1f12;
+      box-shadow: 0 0 0 3px rgba(28, 185, 48, 0.20);
+      flex-shrink: 0;
+    }
+    .port-label {
+      font-size: 10px; font-weight: 700;
+      color: var(--text-bright); text-transform: uppercase; letter-spacing: 0.06em;
+      background: rgba(31, 36, 33, 0.94);
+      padding: 0.22rem 0.45rem; border-radius: 0.15rem;
+      border: 1px solid var(--hairline-bright);
+      white-space: nowrap;
+      font-family: "Lato", sans-serif;
     }
 
-    .legend div span {
-      border-radius: 50%;
-      display: inline-block;
-      height: 10px;
-      margin-right: 5px;
-      width: 10px;
+    /* Loading */
+    .loading #map::after {
+      content: "Loading parcels…"; position: absolute; inset: 0;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.75rem; letter-spacing: 0.12em; text-transform: uppercase;
+      color: var(--text-muted); background: var(--bg-panel);
     }
   </style>
 </head>
-
 <body>
-  <header>
-    <h1>Pacific County, Washington</h1>
-    <h2>Designated Forest Land Parcels</h2>
+
+  <header class="topbar">
+    <div class="shell topbar-inner">
+      <a href="https://github.com/aschulz714/alex-schulz" class="brand">← Alex Schulz</a>
+      <span class="meta">Pacific County, WA · 2021 · refreshed 2026</span>
+    </div>
   </header>
 
-  <div id='map'></div>
+  <main>
+    <section class="hero">
+      <div class="shell">
+        <p class="eyebrow">Pacific County, Washington</p>
+        <h1 class="title">5,433 forest parcels. Ten owners hold most of them.</h1>
+        <h2 class="subtitle">Designated Forest Land</h2>
+        <p class="lede">
+          Every parcel in Pacific County classified by the assessor as <em>Designated Forest Land</em>
+          — a tax category with real consequences for what stays in timber on the Pacific Northwest
+          coastal shelf. Click any parcel for owner, acreage, and assessed value. Pick an owner from
+          the panel to spotlight their holdings.
+        </p>
 
-  <div id="state-legend" class="legend">
-    <h4>Price Per Acre</h4>
-    <div><span style="background-color: #e31a1c"></span>>$700</div>
-    <div><span style="background-color: #fd8d3c"></span>$500</div>
-    <div><span style="background-color: #F36548"></span>$100</div>
-    <div><span style="background-color: #ffffb2"></span>$50</div>
-  </div>
+        <dl class="stats">
+          <div class="stat">
+            <p class="stat-key">Parcels mapped</p>
+            <p class="stat-value" id="stat-parcels">—</p>
+          </div>
+          <div class="stat">
+            <p class="stat-key">Total acres</p>
+            <p class="stat-value"><span id="stat-acres">—</span></p>
+          </div>
+          <div class="stat">
+            <p class="stat-key">Avg $ / acre</p>
+            <p class="stat-value">$<span id="stat-avg">—</span></p>
+          </div>
+          <div class="stat">
+            <p class="stat-key">Largest holding</p>
+            <p class="stat-value owner" id="stat-owner">—</p>
+          </div>
+        </dl>
+      </div>
+    </section>
+
+
+    <!-- Map controls -->
+    <section class="controls-bar">
+      <div class="shell">
+        <div class="controls-row">
+          <div class="control-group">
+            <span class="control-label">Color by</span>
+            <div class="toggle-group" role="group" aria-label="Choropleth metric">
+              <button type="button" class="toggle-btn is-active" data-metric="perAcre">Price / acre</button>
+              <button type="button" class="toggle-btn" data-metric="acres">Total acres</button>
+              <button type="button" class="toggle-btn" data-metric="assessed">Assessed value</button>
+            </div>
+          </div>
+          <div class="control-group">
+            <span class="control-label">Owner tier</span>
+            <div class="toggle-group" role="group" aria-label="Owner tier filter">
+              <button type="button" class="toggle-btn is-active" data-tier="all">All</button>
+              <button type="button" class="toggle-btn" data-tier="institutional" title="Owners holding more than 1,000 acres in total">Institutional</button>
+              <button type="button" class="toggle-btn" data-tier="mid" title="Owners holding 100–1,000 acres in total">Mid-tier</button>
+              <button type="button" class="toggle-btn" data-tier="small" title="Owners holding less than 100 acres in total — the long tail">Small-holder</button>
+            </div>
+          </div>
+          <div class="slider-group">
+            <span class="control-label">Min size</span>
+            <input type="range" id="size-slider" min="0" max="500" step="5" value="0" aria-label="Minimum parcel size in acres" />
+            <span class="slider-value" id="size-value">0 ac</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Map + Owner panel -->
+    <section class="map-section">
+      <div class="shell">
+        <div class="map-and-panel">
+          <div class="map-frame loading" id="map-frame">
+            <span class="map-coord-badge" id="map-badge">46.566°N · 123.718°W · zoom 9</span>
+            <div id="map"></div>
+            <div class="legend" id="legend" aria-label="Map legend">
+              <p class="legend-title" id="legend-title">Price per acre</p>
+              <div id="legend-rows"></div>
+            </div>
+          </div>
+          <aside class="owner-panel" aria-label="Top owners panel">
+            <div class="owner-panel-header">
+              <p class="owner-panel-title">Top 20 owners by acres</p>
+              <button type="button" id="owner-clear" class="owner-clear-btn" disabled>Show all</button>
+            </div>
+            <div class="owner-list" id="owner-list" role="listbox" aria-label="Owners">
+              <!-- populated by JS -->
+            </div>
+          </aside>
+        </div>
+      </div>
+    </section>
+
+    <!-- Findings strip — post-map synthesis. Three proof points for the headline claim. -->
+    <section class="findings-section">
+      <div class="shell">
+        <p class="findings-eyebrow">Key findings</p>
+        <div class="insight-grid">
+          <div class="insight">
+            <p class="insight-key">Concentration</p>
+            <p class="insight-value" id="insight-weyer">—</p>
+            <p class="insight-label">Weyerhaeuser's share of forest acres</p>
+          </div>
+          <div class="insight">
+            <p class="insight-key">Top 10 owners</p>
+            <p class="insight-value" id="insight-top10">—</p>
+            <p class="insight-label">Combined share of forest acres</p>
+          </div>
+          <div class="insight">
+            <p class="insight-key">Forest land share</p>
+            <p class="insight-value" id="insight-county">53%</p>
+            <p class="insight-label">Of Pacific County's total area</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Bar chart — hidden for now to reduce visual density. Uncomment to restore.
+    <section class="chart-section">
+      <div class="shell">
+        <p class="chart-eyebrow">Concentration at a glance</p>
+        <h3 class="chart-heading">Top 10 owners hold 73% of the forest land.</h3>
+        <p class="chart-sub">
+          Each bar represents one owner's total acreage across the 5,433 Designated Forest Land parcels.
+          The remaining 2,300+ owners hold the bottom 27% combined.
+        </p>
+        <div class="chart-frame">
+          <svg class="chart-svg" id="chart" role="img" aria-label="Top 10 owners by acreage"></svg>
+        </div>
+      </div>
+    </section>
+    -->
+
+    <!-- Notes -->
+    <section class="notes-section">
+      <div class="shell">
+        <div class="notes-grid">
+          <div class="notes-block">
+            <p class="notes-eyebrow">Method &amp; sources</p>
+            <h3>How this was made.</h3>
+            <ol>
+              <li>Pacific County Department of Public Works <strong>Taxlot (Parcels)</strong> shapefile.</li>
+              <li>Filtered in QGIS 3.14 to department code <strong>88 — Designated Forest Land</strong>.</li>
+              <li>Exported to GeoJSON, simplified line intersections in <a href="https://mapshaper.org" target="_blank" rel="noopener">mapshaper.org</a>, stored as TopoJSON.</li>
+              <li>Rendered with Mapbox GL JS v3 against a custom Mapbox Studio basemap.</li>
+              <li>Owner tiers computed by aggregating each parcel's <code>CURRENT_O</code> string against the dataset's total acres for that owner. Thresholds: institutional &gt; 1,000 ac; mid-tier 100–1,000; small-holder &lt; 100.</li>
+              <li>Regional port markers are reference points — Grays Harbor, Willapa Harbor, Longview — at approximate harbor centers, accurate to ~1km. Not an exhaustive shipping-infrastructure layer.</li>
+              <li>All statistics on this page are computed live from the loaded TopoJSON — no precomputation.</li>
+            </ol>
+            <div class="source-row">
+              <span class="source-key">Data vintage</span>
+              <span class="source-value">2021-01-12 (Pacific County DPW)</span>
+            </div>
+            <div class="source-row">
+              <span class="source-key">County area</span>
+              <span class="source-value">~783,360 acres (US Census)</span>
+            </div>
+            <div class="source-row">
+              <span class="source-key">Refreshed</span>
+              <span class="source-value">2026-04-28</span>
+            </div>
+            <div class="source-row">
+              <span class="source-key">Source code</span>
+              <span class="source-value"><code>github.com/aschulz714/Pacific-County-Timber</code></span>
+            </div>
+          </div>
+          <div class="notes-block">
+            <p class="notes-eyebrow">Notes</p>
+            <h3>What the map shows.</h3>
+            <p>
+              Pacific County sits on Washington's southwest coast and is one of the most timber-heavy
+              counties in the state. The dominant pattern, visible at a glance, is concentrated ownership:
+              <strong>Weyerhaeuser</strong> holds roughly a third of the forest acres outright;
+              <strong>Rayonier</strong> is a distant second; the top ten owners between them hold the
+              majority. The smaller, brighter-red parcels under "Price / acre" are the highest-value
+              parcels per acre — typically closer to roads or with structures.
+            </p>
+            <p>
+              This is a 2026 refresh of a 2021 GIS class project. The original GIS pipeline is preserved.
+              What's new in 2026: live-computed statistics, an interactive owner panel that highlights
+              individual holdings on the map, a metric toggle between price-per-acre / total acres /
+              assessed value, a minimum-size filter, an <strong>owner-tier filter</strong> framed for
+              acquisition screening (institutional / mid-tier / small-holder), <strong>regional port
+              markers</strong> for haul-distance context, a key-findings synthesis below the map, and a
+              Mapbox GL JS v2 → v3 upgrade with hover and selection states reimplemented.
+            </p>
+            <p>
+              <strong>Limits to acknowledge:</strong> the parcel data is a 2021 snapshot, not a live feed.
+              Timber productivity (site index, age class, species) and regulatory overlays (Marbled
+              Murrelet habitat, riparian buffers) are not in this dataset and would require WA DNR /
+              WDFW layers to add. Mill locations are intentionally not shown — adding them without
+              verified coordinates would weaken rather than strengthen the analysis.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
 
   <footer>
-    <p>Map authored by Alex Schulz</p>
-    <p>Pacific County, Washington is located along the coast and is one of Washington's most productive timber counties.
-    </p>
-    <p>This map uses the parcel data GIS download available from the Pacific County website. The data was filtered for
-      parcels designated with a use of forest land.</p>
-    <p>As you can see, the majority of the parcels in Pacific County are forest land. Click the parcels to see the
-      owner of the parcel, size (in acres), and assessed value from the county.</p>
-    <p>One particular noteworthy pattern is the large ownership by publicly-traded companies: Weyerhaeuser and Rayonier.
-    </p>
-    <P><a href="https://github.com/aschulz714/Pacific-County-Timber/blob/main/README.md">ReadMe</a></p>
-    <P><a href="https://aschulz714.github.io/Portfolio/">Check out my portfolio!</a></p>
-      
+    <div class="shell footer-inner">
+      <span>Map authored by Alex Schulz · Data: Pacific County DPW · Built with Mapbox GL JS v3</span>
+      <div class="links">
+        <a href="https://github.com/aschulz714/Pacific-County-Timber" target="_blank" rel="noopener">Repository ↗</a>
+        <a href="https://github.com/aschulz714/alex-schulz" target="_blank" rel="noopener">Portfolio ↗</a>
+      </div>
+    </div>
   </footer>
-  <!-- Is the is the latest version of Leaflet? -->
-  <!-- <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script> -->
-  <script src="https://code.jquery.com/jquery-3.6.0.min.js"
-    integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4=" crossorigin="anonymous"></script>
-  <script src='https://api.mapbox.com/mapbox-gl-js/v2.3.0/mapbox-gl.js'></script>
+
+  <script src="https://api.mapbox.com/mapbox-gl-js/v3.10.0/mapbox-gl.js"></script>
   <script src="https://unpkg.com/topojson@3"></script>
   <script>
-    let countiesGeoJson
+    const MAPBOX_TOKEN = 'pk.eyJ1IjoiYXNjaHVsejcxNCIsImEiOiJja2k4ZHNoZmQwNHRsMnlvNDZ0bjhqcGlwIn0.cPldI_1d7yJe5f9mm8rBwA';
+    const STYLE_URL = 'mapbox://styles/aschulz714/ckimcu8ei1epf17obf5h9u64j';
+    const CENTER = [-123.7179352, 46.5664905];
+    const ZOOM = 9;
 
-    fetch("data/pacific_county.json")
-      .then(response => {
-        if (response.ok) {
-          return response.json()
-        } else {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-      })
-      .then(data => {
-        countiesGeoJson = topojson.feature(data, {
-          type: 'GeometryCollection',
-          geometries: data.objects.pacific_county.geometries
+    // Metric configuration: each defines color stops + legend rows.
+    const METRICS = {
+      perAcre: {
+        label: 'Price per acre',
+        prop: 'perAcre',
+        stops: [[0, '#ffffb2'], [50, '#ffffb2'], [100, '#F36548'], [500, '#fd8d3c'], [1000, '#e31a1c']],
+        legend: [
+          { color: '#ffffb2', label: '≤ $50' },
+          { color: '#F36548', label: '$50 – $100' },
+          { color: '#fd8d3c', label: '$100 – $500' },
+          { color: '#e31a1c', label: '> $500' },
+        ],
+      },
+      acres: {
+        label: 'Acres',
+        prop: 'ACRES',
+        stops: [[0, '#ffffb2'], [10, '#ffffb2'], [50, '#F36548'], [200, '#fd8d3c'], [1000, '#e31a1c']],
+        legend: [
+          { color: '#ffffb2', label: '≤ 10 ac' },
+          { color: '#F36548', label: '10 – 50 ac' },
+          { color: '#fd8d3c', label: '50 – 200 ac' },
+          { color: '#e31a1c', label: '> 200 ac' },
+        ],
+      },
+      assessed: {
+        label: 'Assessed value',
+        prop: 'ASSESSED',
+        stops: [[0, '#ffffb2'], [10000, '#ffffb2'], [50000, '#F36548'], [200000, '#fd8d3c'], [1000000, '#e31a1c']],
+        legend: [
+          { color: '#ffffb2', label: '≤ $10K' },
+          { color: '#F36548', label: '$10K – $50K' },
+          { color: '#fd8d3c', label: '$50K – $200K' },
+          { color: '#e31a1c', label: '> $200K' },
+        ],
+      },
+    };
+
+    const formatN = (n, digits = 0) => n.toLocaleString('en-US', { maximumFractionDigits: digits });
+    const formatPct = (n, digits = 1) => `${n.toLocaleString('en-US', { maximumFractionDigits: digits, minimumFractionDigits: digits })}%`;
+
+    const state = {
+      metric: 'perAcre',
+      minAcres: 0,
+      selectedOwner: null,
+      tier: 'all', // 'all' | 'institutional' | 'mid' | 'small'
+    };
+
+    // Approximate regional ports — reference points for haul-distance context.
+    // Coordinates are public-domain harbor centers, accurate to ~1km.
+    const PORTS = {
+      type: 'FeatureCollection',
+      features: [
+        { type: 'Feature', properties: { name: 'Port of Grays Harbor' }, geometry: { type: 'Point', coordinates: [-123.8500, 46.9700] } },
+        { type: 'Feature', properties: { name: 'Port of Willapa Harbor' }, geometry: { type: 'Point', coordinates: [-123.7300, 46.6800] } },
+        { type: 'Feature', properties: { name: 'Port of Longview' }, geometry: { type: 'Point', coordinates: [-122.9382, 46.1382] } },
+      ],
+    };
+
+    let map, fc, ownerStats, totalAcres, totalAssessed;
+
+    async function load() {
+      const res = await fetch('data/pacific_county.json');
+      if (!res.ok) throw new Error(`HTTP ${res.status} loading parcels`);
+      const topo = await res.json();
+      fc = topojson.feature(topo, {
+        type: 'GeometryCollection',
+        geometries: topo.objects.pacific_county.geometries,
+      });
+
+      // Compute per-feature derived fields and aggregates.
+      totalAcres = 0;
+      totalAssessed = 0;
+      const byOwner = new Map();
+      fc.features.forEach((f, i) => {
+        const p = f.properties;
+        const acres = Number(p.ACRES) || 0;
+        const assessed = Number(p.ASSESSED) || 0;
+        p.ACRES = acres; p.ASSESSED = assessed;
+        p.perAcre = acres > 0 ? assessed / acres : 0;
+        totalAcres += acres;
+        totalAssessed += assessed;
+        const owner = (p.CURRENT_O || 'Unknown').trim();
+        p._owner = owner;
+        if (!byOwner.has(owner)) byOwner.set(owner, { acres: 0, parcels: 0, assessed: 0 });
+        const r = byOwner.get(owner);
+        r.acres += acres; r.parcels += 1; r.assessed += assessed;
+        f.id = i;
+      });
+
+      ownerStats = Array.from(byOwner.entries())
+        .map(([owner, r]) => ({ owner, ...r, share: r.acres / totalAcres }))
+        .sort((a, b) => b.acres - a.acres);
+
+      // Tag each parcel with its owner's tier based on the owner's TOTAL acreage in the dataset.
+      // Thresholds: institutional > 1,000 ac; mid-tier 100–1,000; small-holder < 100.
+      const tierFor = (acres) => acres >= 1000 ? 'institutional' : acres >= 100 ? 'mid' : 'small';
+      const tierByOwner = new Map(ownerStats.map(o => [o.owner, tierFor(o.acres)]));
+      fc.features.forEach(f => {
+        f.properties._ownerTier = tierByOwner.get(f.properties._owner) || 'small';
+      });
+
+      // Hero stats.
+      const avgPerAcre = totalAcres > 0 ? totalAssessed / totalAcres : 0;
+      document.getElementById('stat-parcels').textContent = formatN(fc.features.length);
+      document.getElementById('stat-acres').textContent = formatN(totalAcres);
+      document.getElementById('stat-avg').textContent = formatN(avgPerAcre);
+      const top = ownerStats[0];
+      document.getElementById('stat-owner').textContent =
+        top.owner.length > 22 ? top.owner.slice(0, 20) + '…' : top.owner;
+
+      // Insight strip values (defensive — section may be hidden).
+      const setText = (id, value) => { const el = document.getElementById(id); if (el) el.textContent = value; };
+      const weyerShare = ownerStats.filter(o => /WEYERHAEUSER/i.test(o.owner)).reduce((a, o) => a + o.share, 0);
+      const top10Share = ownerStats.slice(0, 10).reduce((a, o) => a + o.share, 0);
+      setText('insight-weyer', formatPct(weyerShare * 100, 1));
+      setText('insight-top10', formatPct(top10Share * 100, 0));
+      setText('insight-avg', `$${formatN(avgPerAcre)}`);
+
+      // Owner panel + chart.
+      renderOwnerPanel();
+      renderChart();
+
+      // Init map.
+      mapboxgl.accessToken = MAPBOX_TOKEN;
+      map = new mapboxgl.Map({
+        container: 'map',
+        style: STYLE_URL,
+        center: CENTER,
+        zoom: ZOOM,
+        attributionControl: { compact: true },
+      });
+      map.addControl(new mapboxgl.NavigationControl({ visualizePitch: false }), 'top-right');
+      map.addControl(new mapboxgl.ScaleControl({ unit: 'imperial' }), 'bottom-left');
+
+      let hovered = null;
+
+      map.on('load', () => {
+        document.getElementById('map-frame').classList.remove('loading');
+        map.addSource('parcels', { type: 'geojson', data: fc });
+
+        // Regional ports — HTML markers (style-glyph independent).
+        PORTS.features.forEach(f => {
+          const el = document.createElement('div');
+          el.className = 'port-marker';
+          el.innerHTML = `<span class="port-dot" aria-hidden="true"></span><span class="port-label">${f.properties.name}</span>`;
+          new mapboxgl.Marker({ element: el, anchor: 'left' })
+            .setLngLat(f.geometry.coordinates)
+            .addTo(map);
         });
 
-        for (x of countiesGeoJson.features) {
-          const p = x.properties
-          p.perAcre = p.ASSESSED / p.ACRES
-        }
+        map.addLayer({
+          id: 'parcels-fill',
+          type: 'fill',
+          source: 'parcels',
+          paint: {
+            'fill-color': buildColorExpr(state.metric),
+            'fill-opacity': buildOpacityExpr(),
+          },
+        });
 
-        const sumAcres = countiesGeoJson.features.reduce(function(a, b) {
-          return a + b.properties.ACRES
-        }, 0)
-
-        const sumPrice = countiesGeoJson.features.reduce(function(a, b) {
-          return a + b.properties.ASSESSED
-        }, 0)
-
-        console.log(sumAcres) // total acres
-        console.log(sumPrice / sumAcres) // avg cost per acre over region 
-      })
-
-
-
-
-
-    // var map = L.map('map', {
-    //   center: [36, -94],
-    //   zoom: 4,
-    // });
-
-    mapboxgl.accessToken =
-      'pk.eyJ1IjoiYXNjaHVsejcxNCIsImEiOiJja2k4ZHNoZmQwNHRsMnlvNDZ0bjhqcGlwIn0.cPldI_1d7yJe5f9mm8rBwA';
-    var map = new mapboxgl.Map({
-      container: 'map', // container ID
-      style: 'mapbox://styles/aschulz714/ckimcu8ei1epf17obf5h9u64j', // style URL
-      center: [-123.7179352, 46.5664905], // starting position [lng, lat]
-      zoom: 9 // starting zoom
-    });
-
-
-    // var commonStyles = {
-    //   weight: 1,
-    //   stroke: 1,
-    //   fillOpacity: .8
-    // }
-
-    // var countyLayer = $.getJSON('data/pacific_county.json', function (data) {
-    //   console.log(data);
-    //   var dataLayer = L.geoJson(data, {
-    //     style: function (feature) {
-    //       return {
-    //         color: '#dddddd',
-    //         weight: 1,
-    //         fillOpacity: 1,
-    //         fillColor: '#1f78b4'
-    //       }
-    //     }
-
-    //   }).addTo(map);
-
-
-    // });
-
-    
-
-    map.on('load', function () {
-      map.addSource('parcels', {
-        'type': 'geojson',
-        'data': countiesGeoJson
-      });
-
-      
-
-      // var hoveredStateId = null;
-      // The feature-state dependent fill-opacity expression will render the hover effect
-      // when a feature's hover state is set to true.
-      map.addLayer({
-        'id': 'state-fills',
-        'type': 'fill',
-        'source': 'parcels',
-        'layout': {},
-        'paint': {
-          'fill-color': {
-            property: 'perAcre', // this will be your density property form you geojson
-            stops: [
-              [50, '#ffffb2'],
-              [100, '#F36548'],
-              [500, '#fd8d3c'],
-              [1000, '#e31a1c']
-  
+        map.addLayer({
+          id: 'parcels-line',
+          type: 'line',
+          source: 'parcels',
+          paint: {
+            'line-color': [
+              'case',
+              ['boolean', ['feature-state', 'hover'], false], '#1cb930',
+              'rgba(255, 255, 255, 0.25)',
+            ],
+            'line-width': [
+              'case',
+              ['boolean', ['feature-state', 'hover'], false], 1.6,
+              0.5,
             ],
           },
-          'fill-opacity': [
+        });
+
+        applyFilter();
+
+        map.on('mousemove', 'parcels-fill', (e) => {
+          if (!e.features.length) return;
+          map.getCanvas().style.cursor = 'pointer';
+          if (hovered !== null) map.setFeatureState({ source: 'parcels', id: hovered }, { hover: false });
+          hovered = e.features[0].id;
+          map.setFeatureState({ source: 'parcels', id: hovered }, { hover: true });
+        });
+
+        map.on('mouseleave', 'parcels-fill', () => {
+          map.getCanvas().style.cursor = '';
+          if (hovered !== null) map.setFeatureState({ source: 'parcels', id: hovered }, { hover: false });
+          hovered = null;
+        });
+
+        map.on('click', 'parcels-fill', (e) => {
+          if (!e.features.length) return;
+          const p = e.features[0].properties;
+          const owner = p.CURRENT_O || 'Unknown';
+          const parcelId = p.ASSESSOR || '—';
+          const acres = p.ACRES != null ? formatN(p.ACRES) : '—';
+          const assessed = p.ASSESSED != null ? `$${formatN(p.ASSESSED)}` : '—';
+          const perAcre = (p.ACRES > 0 && p.ASSESSED != null) ? `$${formatN(p.ASSESSED / p.ACRES)}` : '—';
+          new mapboxgl.Popup({ closeButton: true, maxWidth: '280px' })
+            .setLngLat(e.lngLat)
+            .setHTML(`
+              <div class="popup-owner">${owner}</div>
+              <div class="popup-row"><span class="k">Parcel</span><span class="v">${parcelId}</span></div>
+              <div class="popup-row"><span class="k">Acres</span><span class="v">${acres}</span></div>
+              <div class="popup-row"><span class="k">Assessed</span><span class="v">${assessed}</span></div>
+              <div class="popup-row"><span class="k">Per acre</span><span class="v">${perAcre}</span></div>
+            `)
+            .addTo(map);
+        });
+      });
+
+      map.on('error', (e) => console.warn('[map]', e?.error?.message || e));
+
+      // Wire controls. Each toggle-group manages its own active state independently.
+      document.querySelectorAll('.toggle-group').forEach((group) => {
+        group.querySelectorAll('.toggle-btn').forEach((btn) => {
+          btn.addEventListener('click', () => {
+            group.querySelectorAll('.toggle-btn').forEach(b => b.classList.remove('is-active'));
+            btn.classList.add('is-active');
+            if (btn.dataset.metric) {
+              state.metric = btn.dataset.metric;
+              if (map.isStyleLoaded() && map.getLayer('parcels-fill')) {
+                map.setPaintProperty('parcels-fill', 'fill-color', buildColorExpr(state.metric));
+              }
+              renderLegend();
+            } else if (btn.dataset.tier) {
+              state.tier = btn.dataset.tier;
+              applyFilter();
+            }
+          });
+        });
+      });
+
+      const slider = document.getElementById('size-slider');
+      const sliderValue = document.getElementById('size-value');
+      slider.addEventListener('input', () => {
+        state.minAcres = Number(slider.value);
+        sliderValue.textContent = `${formatN(state.minAcres)} ac`;
+        applyFilter();
+      });
+
+      document.getElementById('owner-clear').addEventListener('click', () => {
+        if (state.selectedOwner === null) return;
+        state.selectedOwner = null;
+        renderOwnerPanel();
+        if (map.getLayer('parcels-fill')) {
+          map.setPaintProperty('parcels-fill', 'fill-opacity', buildOpacityExpr());
+        }
+        document.getElementById('owner-clear').disabled = true;
+      });
+
+      renderLegend();
+    }
+
+    function buildColorExpr(metricKey) {
+      const m = METRICS[metricKey];
+      return [
+        'interpolate', ['linear'], ['coalesce', ['get', m.prop], 0],
+        ...m.stops.flatMap(([v, c]) => [v, c]),
+      ];
+    }
+
+    function buildOpacityExpr() {
+      // Selected owner stays full; others dim. Hover bumps slightly.
+      if (state.selectedOwner) {
+        return [
+          'case',
+          ['==', ['get', 'CURRENT_O'], state.selectedOwner], [
             'case',
-            ['boolean', ['feature-state', 'hover'], false],
-            1,
-            .7
-          ]
-        }
+            ['boolean', ['feature-state', 'hover'], false], 0.95,
+            0.85,
+          ],
+          0.12,
+        ];
+      }
+      return [
+        'case',
+        ['boolean', ['feature-state', 'hover'], false], 0.95,
+        0.72,
+      ];
+    }
+
+    function applyFilter() {
+      if (!map || !map.getLayer('parcels-fill')) return;
+      const filters = [];
+      if (state.minAcres > 0) filters.push(['>=', ['get', 'ACRES'], state.minAcres]);
+      if (state.tier !== 'all') filters.push(['==', ['get', '_ownerTier'], state.tier]);
+      const combined = filters.length === 0 ? null : filters.length === 1 ? filters[0] : ['all', ...filters];
+      map.setFilter('parcels-fill', combined);
+      map.setFilter('parcels-line', combined);
+    }
+
+    function renderLegend() {
+      const m = METRICS[state.metric];
+      document.getElementById('legend-title').textContent = m.label;
+      const html = m.legend
+        .map(({ color, label }) => `<div class="legend-row"><span class="legend-swatch" style="background:${color}"></span> ${label}</div>`)
+        .join('');
+      document.getElementById('legend-rows').innerHTML = html;
+    }
+
+    function renderOwnerPanel() {
+      const list = document.getElementById('owner-list');
+      const top = ownerStats.slice(0, 20);
+      const maxAcres = top[0].acres;
+      list.innerHTML = top.map((o, i) => {
+        const isActive = o.owner === state.selectedOwner;
+        const widthPct = (o.acres / maxAcres) * 100;
+        return `
+          <button type="button" class="owner-row ${isActive ? 'is-active' : ''}" data-owner="${escapeAttr(o.owner)}" role="option" aria-selected="${isActive}">
+            <span class="owner-rank">${String(i + 1).padStart(2, '0')}</span>
+            <span class="owner-name">${escapeHtml(o.owner)}</span>
+            <span class="owner-share">${formatPct(o.share * 100, 1)}</span>
+            <span class="owner-acres-bar"><span style="width:${widthPct}%"></span></span>
+          </button>
+        `;
+      }).join('');
+      list.querySelectorAll('.owner-row').forEach((row) => {
+        row.addEventListener('click', () => {
+          const owner = row.dataset.owner;
+          if (state.selectedOwner === owner) {
+            state.selectedOwner = null;
+          } else {
+            state.selectedOwner = owner;
+          }
+          renderOwnerPanel();
+          if (map && map.getLayer('parcels-fill')) {
+            map.setPaintProperty('parcels-fill', 'fill-opacity', buildOpacityExpr());
+          }
+          document.getElementById('owner-clear').disabled = state.selectedOwner === null;
+        });
       });
+    }
 
+    function renderChart() {
+      const svg = document.getElementById('chart');
+      if (!svg) return; // Chart section may be hidden; bail silently.
+      const top = ownerStats.slice(0, 10);
+      const maxAcres = top[0].acres;
+      const W = 720, BAR_H = 28, GAP = 8, LABEL_W = 220, NUM_W = 110, LEFT_PAD = 12, RIGHT_PAD = 12;
+      const chartW = W - LABEL_W - NUM_W - LEFT_PAD - RIGHT_PAD;
+      const H = top.length * (BAR_H + GAP) + 16;
 
-      map.addLayer({
-        'id': 'state-borders',
-        'type': 'line',
-        'source': 'parcels',
-        'layout': {},
-        'paint': {
-          'line-color': '#ABA9A9',
-          'line-width': 1
-        }
-      });
+      svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+      svg.setAttribute('preserveAspectRatio', 'xMinYMin meet');
 
+      const g = top.map((o, i) => {
+        const y = i * (BAR_H + GAP) + 8;
+        const w = (o.acres / maxAcres) * chartW;
+        const ownerLabel = o.owner.length > 32 ? o.owner.slice(0, 30) + '…' : o.owner;
+        return `
+          <g class="bar">
+            <text class="label-name" x="${LEFT_PAD}" y="${y + BAR_H / 2}" dominant-baseline="middle">${escapeHtml(ownerLabel)}</text>
+            <rect class="bar-bg" x="${LEFT_PAD + LABEL_W}" y="${y}" width="${chartW}" height="${BAR_H}" rx="2" />
+            <rect class="bar-fill" x="${LEFT_PAD + LABEL_W}" y="${y}" width="${w}" height="${BAR_H}" rx="2" />
+            <text class="label-acres" x="${LEFT_PAD + LABEL_W + chartW + 8}" y="${y + BAR_H / 2 - 5}" dominant-baseline="middle">${formatN(o.acres)} ac</text>
+            <text class="label-pct" x="${LEFT_PAD + LABEL_W + chartW + 8}" y="${y + BAR_H / 2 + 9}" dominant-baseline="middle">${formatPct(o.share * 100, 1)}</text>
+          </g>
+        `;
+      }).join('');
 
-      // map.on('mousemove', 'state-fills', function (e) {
-      //   if (e.features.length > 0) {
-      //     if (hoveredStateId !== null) {
-      //       map.setFeatureState({
-      //         source: 'parcels',
-      //         id: hoveredStateId
-      //       }, {
-      //         hover: false
-      //       });
-      //     }
-      //     hoveredStateId = e.features[0].id;
-      //     map.setFeatureState({
-      //       source: 'parcels',
-      //       id: hoveredStateId
-      //     }, {
-      //       hover: true
-      //     });
-      //   }
-      // });
+      svg.innerHTML = g;
+    }
 
-      // // When the mouse leaves the state-fill layer, update the feature state of the
-      // // previously hovered feature.
-      // map.on('mouseleave', 'state-fills', function () {
-      //   if (hoveredStateId !== null) {
-      //     map.setFeatureState({
-      //       source: 'parcels',
-      //       id: hoveredStateId
-      //     }, {
-      //       hover: false
-      //     });
-      //   }
-      //   hoveredStateId = null;
-      // });
+    function escapeHtml(s) {
+      return String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    }
+    function escapeAttr(s) {
+      return escapeHtml(s);
+    }
 
-      var popup = new mapboxgl.Popup({
-        closeButton: false,
-        closeOnClick: false
-      });
-
-      // map.on('mouseenter', 'state-fills', function (e) {
-      //   map.getCanvas().style.cursor = 'pointer';
-
-      //   var coordinates = e.features[0].geometry.coordinates.slice();
-
-      //   // while (Math.abs(e.lngLat.lng - coordinates[0]) > 180) {
-      //   // coordinates[0] += e.lngLat.lng > coordinates[0] ? 360 : -360;
-
-      //   // }
-
-      //   popup.setLngLat(e.lngLat).setHTML(`${e.features[0].properties.CURRENT_O} </BR>
-      //       Acres: ${e.features[0].properties.ACRES.toFixed()} </BR>
-      //       Assessed Value: $ ${e.features[0].properties.ASSESSED.toLocaleString()}`).addTo(map);
-
-
-      map.on('click', 'state-fills', function (e) {
-        new mapboxgl.Popup()
-          .setLngLat(e.lngLat)
-          .setHTML(`${e.features[0].properties.CURRENT_O} </BR>
-              Parcel ID: ${e.features[0].properties.ASSESSOR} </BR>
-              Acres: ${e.features[0].properties.ACRES.toFixed()} </BR>
-              Assessed Value: $ ${e.features[0].properties.ASSESSED.toLocaleString()} </br>
-              Price Per Acre: $ ${(e.features[0].properties.ASSESSED/e.features[0].properties.ACRES).toFixed()}`)
-          .addTo(map);
-
-
-      });
-
-      map.on('mouseleave', 'state-fills', function () {
-        map.getCanvas().style.cursor = '';
-        popup.remove();
-      });
-
-
-      map.on('mouseenter', 'state-fills', function () {
-        map.getCanvas().style.cursor = 'pointer';
-      });
-
-      // Change it back to a pointer when it leaves.
-      map.on('mouseleave', 'state-fills', function () {
-        map.getCanvas().style.cursor = '';
-      });
-
+    load().catch((err) => {
+      console.error(err);
+      document.getElementById('map-frame').classList.remove('loading');
     });
-
-    //  })
   </script>
-
 </body>
-
 </html>
